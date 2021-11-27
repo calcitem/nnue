@@ -1,7 +1,8 @@
 #
 # Copyright 2020, 2021 by Jon Dart. All Rights Reserved.
 #
-NNUE_FLAGS = -I. -g -std=c++17 -Wall -Wextra -Wpedantic -fsanitize=address -fsanitize=bounds-strict
+NNUE_FLAGS = -I. -g -std=c++17 -Wall -Wextra -Wpedantic
+#-fsanitize=address -fsanitize=bounds-strict
 
 ARCH_FLAGS = -mavx2 -mbmi2 -DSIMD -DSSSE3
 
@@ -17,7 +18,7 @@ CPP = g++
 LD = g++
 
 #LDFLAGS = -fuse-ld=gold
-LDFLAGS =  -fsanitize=address -fsanitize=bounds-strict
+#LDFLAGS =  -fsanitize=address -fsanitize=bounds-strict
 
 BUILD = build
 EXPORT = build
