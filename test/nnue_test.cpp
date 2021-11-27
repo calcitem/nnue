@@ -16,8 +16,8 @@
 
 // Unit tests for nnue code
 
-template<size_t ROWS, size_t COLS>
-static int test_linear() {
+template <size_t ROWS, size_t COLS> static int test_linear()
+{
     int errs = 0;
 
     using InputType = uint8_t;
@@ -28,35 +28,36 @@ static int test_linear() {
     static BiasType biases[COLS];
     static WeightType weights[COLS][ROWS]; // indexed first by output
 
-    unsigned seed1 =
-        std::chrono::system_clock::now().time_since_epoch().count();
+    unsigned seed1
+        = std::chrono::system_clock::now().time_since_epoch().count();
     std::mt19937 gen(seed1);
     std::uniform_int_distribution<int> dist(-127, 127);
 
-    constexpr size_t bufSize = COLS*sizeof(BiasType)+ (ROWS * COLS)*sizeof(WeightType);
+    constexpr size_t bufSize
+        = COLS * sizeof(BiasType) + (ROWS * COLS) * sizeof(WeightType);
     auto buf = std::unique_ptr<std::byte[]>(new std::byte[bufSize]);
 
-    std::byte *b = buf.get();
-    BiasType *bb = reinterpret_cast<BiasType *>(b);
+    std::byte* b = buf.get();
+    BiasType* bb = reinterpret_cast<BiasType*>(b);
     for (size_t i = 0; i < COLS; i++) {
-        *bb++ = biases[i] = (i%15) + i - 10;
+        *bb++ = biases[i] = (i % 15) + i - 10;
     }
-    b += COLS*sizeof(BiasType);
-    WeightType *w = reinterpret_cast<WeightType*>(b);
+    b += COLS * sizeof(BiasType);
+    WeightType* w = reinterpret_cast<WeightType*>(b);
     // serialized in column order
     for (size_t i = 0; i < COLS; i++) {
         for (size_t j = 0; j < ROWS; j++) {
-            *w++ = weights[i][j] = ((i+j) % 20) - 10;
+            *w++ = weights[i][j] = ((i + j) % 20) - 10;
         }
     }
 
-    nnue::LinearLayer<InputType, WeightType, BiasType, OutputType, ROWS, COLS> layer;
+    nnue::LinearLayer<InputType, WeightType, BiasType, OutputType, ROWS, COLS>
+        layer;
 
     std::string tmp_name(std::tmpnam(nullptr));
 
     std::ofstream outfile(tmp_name, std::ios::binary);
-    outfile.write(reinterpret_cast<char *>(buf.get()),
-                  bufSize);
+    outfile.write(reinterpret_cast<char*>(buf.get()), bufSize);
     outfile.close();
 
     std::ifstream infile(tmp_name, std::ios::binary);
@@ -77,7 +78,7 @@ static int test_linear() {
     }
     for (size_t i = 0; i < COLS; i++) {
         // get weights for output column
-        const WeightType *col = layer.getCol(i);
+        const WeightType* col = layer.getCol(i);
         for (size_t j = 0; j < ROWS; j++) {
             errs += (weights[i][j] != col[j]);
         }
@@ -107,19 +108,22 @@ static int test_linear() {
         errs += computed[i] != output[i];
     }
     if (errs - tmp > 0)
-        std::cerr << "errors computing dot product " << ROWS << "x" << COLS << std::endl;
+        std::cerr << "errors computing dot product " << ROWS << "x" << COLS
+                  << std::endl;
     return errs;
 }
 
-static const std::unordered_map<char, nnue::Piece> pieceMap = {
-    {'p', nnue::BlackPawn}, {'n', nnue::BlackKnight}, {'b', nnue::BlackBishop},
-    {'r', nnue::BlackRook}, {'q', nnue::BlackQueen},  {'k', nnue::BlackKing},
-    {'P', nnue::WhitePawn}, {'N', nnue::WhiteKnight}, {'B', nnue::WhiteBishop},
-    {'R', nnue::WhiteRook}, {'Q', nnue::WhiteQueen},  {'K', nnue::WhiteKing}};
+static const std::unordered_map<char, nnue::Piece> pieceMap
+    = { { 'p', nnue::BlackPawn }, { 'n', nnue::BlackKnight },
+          { 'b', nnue::BlackBishop }, { 'r', nnue::BlackRook },
+          { 'q', nnue::BlackQueen }, { 'k', nnue::BlackKing },
+          { 'P', nnue::WhitePawn }, { 'N', nnue::WhiteKnight },
+          { 'B', nnue::WhiteBishop }, { 'R', nnue::WhiteRook },
+          { 'Q', nnue::WhiteQueen }, { 'K', nnue::WhiteKing } };
 
 // wrapper around nnue::HalfKp, sets up that class with some fixed parameters
 class HalfKp {
-  public:
+public:
     static constexpr size_t OutputSize = 256;
 
     static constexpr size_t InputSize = 64 * (10 * 64 + 1);
@@ -127,22 +131,26 @@ class HalfKp {
     using OutputType = int16_t;
 
     // test propagation
-    using Layer1 =
-        nnue::HalfKp<uint16_t, int16_t, int16_t, int16_t, InputSize, OutputSize>;
+    using Layer1 = nnue::HalfKp<uint16_t, int16_t, int16_t, int16_t, InputSize,
+        OutputSize>;
 
     using AccumulatorType = Layer1::AccumulatorType;
 
-    HalfKp() : layer1(new Layer1()) {}
+    HalfKp()
+        : layer1(new Layer1())
+    {
+    }
 
     AccumulatorType accum;
 
-    void init(unsigned index, const OutputType vals[]) {
+    void init(unsigned index, const OutputType vals[])
+    {
         layer1.get()->setCol(index, vals);
     }
 
-    Layer1 *get() const noexcept { return layer1.get(); }
+    Layer1* get() const noexcept { return layer1.get(); }
 
-  private:
+private:
     std::unique_ptr<Layer1> layer1;
 };
 
@@ -151,12 +159,13 @@ static int16_t col2[HalfKp::OutputSize];
 static int16_t col3[HalfKp::OutputSize];
 static int16_t col4[HalfKp::OutputSize];
 
-static int test_halfkp() {
-    const std::string fen =
-        "4r3/5pk1/1q1r1p1p/1p1Pn2Q/1Pp4P/6P1/5PB1/R3R1K1 b - -";
+static int test_halfkp()
+{
+    const std::string fen
+        = "4r3/5pk1/1q1r1p1p/1p1Pn2Q/1Pp4P/6P1/5PB1/R3R1K1 b - -";
 
-    unsigned seed1 =
-        std::chrono::system_clock::now().time_since_epoch().count();
+    unsigned seed1
+        = std::chrono::system_clock::now().time_since_epoch().count();
     std::mt19937 gen(seed1);
     std::uniform_int_distribution<int16_t> dist(-1000, 1000);
     for (size_t i = 0; i < HalfKp::OutputSize; i++) {
@@ -166,13 +175,13 @@ static int test_halfkp() {
         col4[i] = dist(gen);
     }
 
-    std::unordered_set<nnue::IndexType> w_expected{
-        4231, 4235, 3860, 4117, 3869, 3872, 3937, 3878, 3944,
-        3882, 4075, 4398, 4464, 4338, 3956, 3958, 3964, 4355};
+    std::unordered_set<nnue::IndexType> w_expected { 4231, 4235, 3860, 4117,
+        3869, 3872, 3937, 3878, 3944, 3882, 4075, 4398, 4464, 4338, 3956, 3958,
+        3964, 4355 };
 
-    std::unordered_set<nnue::IndexType> b_expected{
-        6281, 6277, 5884, 6139, 5875, 5872, 5807, 5866, 5800,
-        5862, 5925, 6370, 6304, 6174, 5788, 5786, 5780, 6157};
+    std::unordered_set<nnue::IndexType> b_expected { 6281, 6277, 5884, 6139,
+        5875, 5872, 5807, 5866, 5800, 5862, 5925, 6370, 6304, 6174, 5788, 5786,
+        5780, 6157 };
 
     Position p(fen);
     ChessInterface intf(&p);
@@ -241,8 +250,8 @@ static int test_halfkp() {
         expected[i] = col3[i] + col4[i];
     }
     for (size_t i = HalfKp::OutputSize; i < HalfKp::OutputSize * 2; ++i) {
-        expected[i] =
-            col1[i - HalfKp::OutputSize] + col2[i - HalfKp::OutputSize];
+        expected[i]
+            = col1[i - HalfKp::OutputSize] + col2[i - HalfKp::OutputSize];
     }
     for (size_t i = 0; i < HalfKp::OutputSize * 2; ++i) {
         if (expected[i] != accum.getOutput()[i]) {
@@ -255,10 +264,11 @@ static int test_halfkp() {
     return errs;
 }
 
-static int accumCompare(const HalfKp::AccumulatorType &accum1,
-                        const HalfKp::AccumulatorType &accum2) {
-    const HalfKp::OutputType *p = accum1.getOutput();
-    const HalfKp::OutputType *q = accum2.getOutput();
+static int accumCompare(const HalfKp::AccumulatorType& accum1,
+    const HalfKp::AccumulatorType& accum2)
+{
+    const HalfKp::OutputType* p = accum1.getOutput();
+    const HalfKp::OutputType* q = accum2.getOutput();
     int errs = 0;
     for (size_t i = 0; i < 2 * HalfKp::OutputSize; i++) {
         if (*p++ != *q++) {
@@ -270,17 +280,18 @@ static int accumCompare(const HalfKp::AccumulatorType &accum1,
     return errs;
 }
 
-static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
+static int test_incr(ChessInterface& ciSource, ChessInterface& ciTarget)
+{
     int errs = 0;
 
     nnue::IndexArray bIndices, wIndices;
 
     std::set<nnue::IndexType> base, target;
 
-    nnue::Evaluator<ChessInterface>::getIndices<nnue::White>(ciSource,
-                                                             wIndices);
-    nnue::Evaluator<ChessInterface>::getIndices<nnue::Black>(ciSource,
-                                                             bIndices);
+    nnue::Evaluator<ChessInterface>::getIndices<nnue::White>(
+        ciSource, wIndices);
+    nnue::Evaluator<ChessInterface>::getIndices<nnue::Black>(
+        ciSource, bIndices);
     for (auto it = wIndices.begin();
          it != wIndices.end() && *it != nnue::LAST_INDEX; it++) {
         base.insert(*it);
@@ -290,10 +301,10 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
         base.insert(*it);
     }
 
-    nnue::Evaluator<ChessInterface>::getIndices<nnue::White>(ciTarget,
-                                                             wIndices);
-    nnue::Evaluator<ChessInterface>::getIndices<nnue::Black>(ciTarget,
-                                                             bIndices);
+    nnue::Evaluator<ChessInterface>::getIndices<nnue::White>(
+        ciTarget, wIndices);
+    nnue::Evaluator<ChessInterface>::getIndices<nnue::Black>(
+        ciTarget, bIndices);
     for (auto it = wIndices.begin();
          it != wIndices.end() && *it != nnue::LAST_INDEX; it++) {
         target.insert(*it);
@@ -306,10 +317,10 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
     std::vector<nnue::IndexType> added(32), removed(32);
 
     auto itend = std::set_difference(base.begin(), base.end(), target.begin(),
-                                     target.end(), removed.begin());
+        target.end(), removed.begin());
     removed.resize(itend - removed.begin());
-    itend = std::set_difference(target.begin(), target.end(), base.begin(),
-                                base.end(), added.begin());
+    itend = std::set_difference(
+        target.begin(), target.end(), base.begin(), base.end(), added.begin());
     added.resize(itend - added.begin());
 
     nnue::Evaluator<ChessInterface> evaluator;
@@ -320,9 +331,9 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
     nnue::IndexArray wRemoved, wAdded, bRemoved, bAdded;
     size_t wAddedCount, wRemovedCount, bAddedCount, bRemovedCount;
     evaluator.getIndexDiffs(ciSource, ciTarget, nnue::White, wAdded, wRemoved,
-                            wAddedCount, wRemovedCount);
+        wAddedCount, wRemovedCount);
     evaluator.getIndexDiffs(ciSource, ciTarget, nnue::Black, bAdded, bRemoved,
-                            bAddedCount, bRemovedCount);
+        bAddedCount, bRemovedCount);
 
     // diffs
     std::set<nnue::IndexType> removedAll, addedAll;
@@ -336,9 +347,8 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
         addedAll.insert(bAdded[i]);
 
     std::vector<nnue::IndexType> intersect(32);
-    auto intersect_end = std::set_intersection(
-        removedAll.begin(), removedAll.end(), addedAll.begin(), addedAll.end(),
-        intersect.begin());
+    auto intersect_end = std::set_intersection(removedAll.begin(),
+        removedAll.end(), addedAll.begin(), addedAll.end(), intersect.begin());
     // diff algorithm may place items in both removed and added
     // lists. Filter these out.
     for (auto it = intersect.begin(); it != intersect_end; it++) {
@@ -348,7 +358,7 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
 
     std::vector<nnue::IndexType> diffs(32);
     itend = std::set_difference(removedAll.begin(), removedAll.end(),
-                                removed.begin(), removed.end(), diffs.begin());
+        removed.begin(), removed.end(), diffs.begin());
     diffs.resize(itend - diffs.begin());
     if (diffs.size() != 0) {
         ++errs;
@@ -356,7 +366,7 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
     }
     diffs.clear();
     itend = std::set_difference(addedAll.begin(), addedAll.end(), added.begin(),
-                                added.end(), diffs.begin());
+        added.end(), diffs.begin());
     diffs.resize(itend - diffs.begin());
     if (diffs.size() != 0) {
         ++errs;
@@ -377,20 +387,20 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
 
     // Full evaluation of 1st layer for source position
     evaluator.updateAccum(network, wIndices, nnue::White, ciSource.sideToMove(),
-                          ciSource.getAccumulator());
+        ciSource.getAccumulator());
     evaluator.updateAccum(network, bIndices, nnue::Black, ciSource.sideToMove(),
-                          ciSource.getAccumulator());
+        ciSource.getAccumulator());
 
     // Full evaluation of 1st layer for target position into "accum"
-    evaluator.updateAccum(network, wIndices, nnue::White, ciTarget.sideToMove(),
-                          accum);
-    evaluator.updateAccum(network, bIndices, nnue::Black, ciTarget.sideToMove(),
-                          accum);
+    evaluator.updateAccum(
+        network, wIndices, nnue::White, ciTarget.sideToMove(), accum);
+    evaluator.updateAccum(
+        network, bIndices, nnue::Black, ciTarget.sideToMove(), accum);
 
-    assert(ciTarget.getAccumulator().getState(nnue::AccumulatorHalf::Lower) ==
-           nnue::AccumulatorState::Empty);
-    assert(ciTarget.getAccumulator().getState(nnue::AccumulatorHalf::Upper) ==
-           nnue::AccumulatorState::Empty);
+    assert(ciTarget.getAccumulator().getState(nnue::AccumulatorHalf::Lower)
+        == nnue::AccumulatorState::Empty);
+    assert(ciTarget.getAccumulator().getState(nnue::AccumulatorHalf::Upper)
+        == nnue::AccumulatorState::Empty);
 
     // Incremental evaluation of 1st layer, starting from source position
     evaluator.updateAccumIncremental(network, ciSource, ciTarget, nnue::White);
@@ -411,15 +421,16 @@ static int test_incr(ChessInterface &ciSource, ChessInterface &ciTarget) {
     return errs;
 }
 
-static int test_incremental() {
-    constexpr auto source_fen =
-        "r1bqk2r/pp1n1ppp/2pbpn2/3p4/2PP4/2N1PN2/PPQ1BPPP/R1B1K2R b KQkq -";
+static int test_incremental()
+{
+    constexpr auto source_fen
+        = "r1bqk2r/pp1n1ppp/2pbpn2/3p4/2PP4/2N1PN2/PPQ1BPPP/R1B1K2R b KQkq -";
 
-    constexpr auto target_fen =
-        "r1bqk2r/pp1n1ppp/2pbpn2/8/2pP4/2N1PN2/PPQ1BPPP/R1B1K2R w KQkq -";
+    constexpr auto target_fen
+        = "r1bqk2r/pp1n1ppp/2pbpn2/8/2pP4/2N1PN2/PPQ1BPPP/R1B1K2R w KQkq -";
 
-    constexpr auto target2_fen =
-        "r1bqk2r/pp1n1ppp/2pbpn2/8/2BP4/2N1PN2/PPQ2PPP/R1B1K2R b KQkq -";
+    constexpr auto target2_fen
+        = "r1bqk2r/pp1n1ppp/2pbpn2/8/2BP4/2N1PN2/PPQ2PPP/R1B1K2R b KQkq -";
 
     int errs = 0;
 
@@ -431,10 +442,10 @@ static int test_incremental() {
     ChessInterface ciTarget(&target_pos);
     // set up dirty status
     // d5 pawn x c4 pawn
-    source_pos.dirty[source_pos.dirty_num++] =
-        DirtyState(35 /*D5*/, 26 /*C4*/, nnue::BlackPawn);
-    source_pos.dirty[source_pos.dirty_num++] =
-        DirtyState(26 /*C4*/, nnue::InvalidSquare, nnue::WhitePawn);
+    source_pos.dirty[source_pos.dirty_num++]
+        = DirtyState(35 /*D5*/, 26 /*C4*/, nnue::BlackPawn);
+    source_pos.dirty[source_pos.dirty_num++]
+        = DirtyState(26 /*C4*/, nnue::InvalidSquare, nnue::WhitePawn);
     // connect target to previous position
     target_pos.previous = &source_pos;
 
@@ -444,10 +455,10 @@ static int test_incremental() {
     ChessInterface ciTarget2(&target2_pos);
 
     // Try a position 2 half-moves back
-    target_pos.dirty[target_pos.dirty_num++] =
-        DirtyState(12 /*E2*/, 26 /*C4*/, nnue::WhiteBishop);
-    target_pos.dirty[target_pos.dirty_num++] =
-        DirtyState(26 /*C4*/, nnue::InvalidSquare, nnue::BlackPawn);
+    target_pos.dirty[target_pos.dirty_num++]
+        = DirtyState(12 /*E2*/, 26 /*C4*/, nnue::WhiteBishop);
+    target_pos.dirty[target_pos.dirty_num++]
+        = DirtyState(26 /*C4*/, nnue::InvalidSquare, nnue::BlackPawn);
 
     target2_pos.previous = &target_pos;
 
@@ -458,7 +469,8 @@ static int test_incremental() {
     return errs;
 }
 
-static int test_clamp() {
+static int test_clamp()
+{
     int errs = 0;
     using InputType = int16_t;
     using OutputType = uint8_t;
@@ -467,24 +479,27 @@ static int test_clamp() {
     using Clamper = nnue::Clamp<InputType, OutputType, SIZE>;
 
     alignas(nnue::DEFAULT_ALIGN) InputType input[SIZE];
-    alignas(nnue::DEFAULT_ALIGN) OutputType output[SIZE],output2[SIZE];
+    alignas(nnue::DEFAULT_ALIGN) OutputType output[SIZE], output2[SIZE];
 
     Clamper c(CLAMP_MAX);
 
     for (unsigned i = 0; i < SIZE; i++) {
-        input[i] = (i%20)-10 + (i%5)*30;
-        output[i] = static_cast<OutputType>(std::clamp<InputType>(input[i],0,static_cast<InputType>(CLAMP_MAX)));
+        input[i] = (i % 20) - 10 + (i % 5) * 30;
+        output[i] = static_cast<OutputType>(std::clamp<InputType>(
+            input[i], 0, static_cast<InputType>(CLAMP_MAX)));
     }
-    std::memset(output2,'\0',SIZE*sizeof(OutputType));
-    c.doForward(input,output2);
+    std::memset(output2, '\0', SIZE * sizeof(OutputType));
+    c.doForward(input, output2);
     for (unsigned i = 0; i < SIZE; i++) {
         errs += output2[i] != output[i];
     }
-    if (errs) std::cerr << errs << " error(s) in clamp function" << std::endl;
+    if (errs)
+        std::cerr << errs << " error(s) in clamp function" << std::endl;
     return errs;
 }
 
-static int test_scale_and_clamp() {
+static int test_scale_and_clamp()
+{
     int errs = 0;
     constexpr unsigned SIZE = 32;
     constexpr int CLAMP_MAX = 127;
@@ -494,30 +509,34 @@ static int test_scale_and_clamp() {
     using ScaleAndClamper = nnue::ScaleAndClamp<InputType, OutputType, SIZE>;
 
     alignas(nnue::DEFAULT_ALIGN) InputType input[SIZE];
-    alignas(nnue::DEFAULT_ALIGN) OutputType output[SIZE],output2[SIZE];
+    alignas(nnue::DEFAULT_ALIGN) OutputType output[SIZE], output2[SIZE];
 
-    ScaleAndClamper c(SCALE,CLAMP_MAX);
+    ScaleAndClamper c(SCALE, CLAMP_MAX);
 
     for (unsigned i = 0; i < SIZE; i++) {
-        input[i] = -9000 + 900*std::min<unsigned>(i,10) + i;
-        output[i] = static_cast<OutputType>(std::clamp<InputType>(input[i]/SCALE,0,CLAMP_MAX));
+        input[i] = -9000 + 900 * std::min<unsigned>(i, 10) + i;
+        output[i] = static_cast<OutputType>(
+            std::clamp<InputType>(input[i] / SCALE, 0, CLAMP_MAX));
     }
-    std::memset(output2,'\0',SIZE*sizeof(OutputType));
-    c.doForward(input,output2);
+    std::memset(output2, '\0', SIZE * sizeof(OutputType));
+    c.doForward(input, output2);
     for (unsigned i = 0; i < SIZE; i++) {
         errs += output2[i] != output[i];
     }
-    if (errs) std::cerr << errs << " error(s) in scale and clamp function" << std::endl;
+    if (errs)
+        std::cerr << errs << " error(s) in scale and clamp function"
+                  << std::endl;
     return errs;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
     nnue::Network n;
 
     int errs = 0;
-    errs += test_linear<512,32>();
-    errs += test_linear<32,32>();
-    errs += test_linear<32,1>();
+    errs += test_linear<512, 32>();
+    errs += test_linear<32, 32>();
+    errs += test_linear<32, 1>();
     errs += test_halfkp();
     errs += test_incremental();
     errs += test_clamp();

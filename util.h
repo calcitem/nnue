@@ -31,10 +31,11 @@ static uint64_t to_little_endian64(uint64_t x) { return (x); }
 #endif
 #endif
 
-template <typename T> T read_little_endian(std::istream &s) {
+template <typename T> T read_little_endian(std::istream& s)
+{
     char buf[sizeof(T)];
     s.read(buf, sizeof(T));
-    T input = *(reinterpret_cast<T *>(buf));
+    T input = *(reinterpret_cast<T*>(buf));
     switch (sizeof(T)) {
     case 1:
         return static_cast<T>(input);

@@ -8,31 +8,32 @@
 // This class defines a linear transformation layer of the NNUE.
 //
 template <typename InputType, typename WeightType, typename BiasType,
-          typename OutputType, size_t inputSize, size_t outputSize,
-          size_t alignment = DEFAULT_ALIGN>
+    typename OutputType, size_t inputSize, size_t outputSize,
+    size_t alignment = DEFAULT_ALIGN>
 class LinearLayer : public TypedLayer<InputType, OutputType, inputSize,
-                                      outputSize, alignment> {
-  public:
+                        outputSize, alignment> {
+public:
     LinearLayer() = default;
 
     virtual ~LinearLayer() = default;
 
     // propagate data through the layer
-    virtual inline void doForward(const InputType *input,
-                                  OutputType *output) const noexcept {
+    virtual inline void doForward(
+        const InputType* input, OutputType* output) const noexcept
+    {
         dotProduct(input, output);
     }
 
-    inline void dotProduct(const InputType *input, OutputType *output) const
-        noexcept {
+    inline void dotProduct(
+        const InputType* input, OutputType* output) const noexcept
+    {
 #if defined(SIMD)
         if constexpr (outputSize == 1) { // output layer
-            simd::dotProduct32x1(input,_weights[0],_biases,output);
-        }
-        else if constexpr (outputSize == 32) {
-            simd::dotProductnx32<inputSize,outputSize>(input,_weights,_biases,output);
-        }
-        else
+            simd::dotProduct32x1(input, _weights[0], _biases, output);
+        } else if constexpr (outputSize == 32) {
+            simd::dotProductnx32<inputSize, outputSize>(
+                input, _weights, _biases, output);
+        } else
 #endif
         {
             // generic implementation
@@ -41,14 +42,15 @@ class LinearLayer : public TypedLayer<InputType, OutputType, inputSize,
             }
             for (size_t i = 0; i < outputSize; i++) {
                 for (size_t j = 0; j < inputSize; j++) {
-                    output[i] +=
-                        static_cast<OutputType>(input[j] * this->_weights[i][j]);
+                    output[i] += static_cast<OutputType>(
+                        input[j] * this->_weights[i][j]);
                 }
             }
         }
     }
 
-    virtual void zero() {
+    virtual void zero()
+    {
         for (size_t i = 0; i < outputSize; ++i) {
             _biases[i] = 0;
         }
@@ -59,7 +61,8 @@ class LinearLayer : public TypedLayer<InputType, OutputType, inputSize,
         }
     }
 
-    virtual std::istream &read(std::istream &s) {
+    virtual std::istream& read(std::istream& s)
+    {
         // Note: linear layers are stored in column order
         for (size_t i = 0; i < outputSize && s.good(); ++i) {
             _biases[i] = read_little_endian<BiasType>(s);
@@ -72,18 +75,20 @@ class LinearLayer : public TypedLayer<InputType, OutputType, inputSize,
         return s;
     }
 
-    virtual const BiasType *getBiases() const noexcept { return _biases; }
+    virtual const BiasType* getBiases() const noexcept { return _biases; }
 
-    virtual const WeightType *getCol(size_t col) const noexcept {
+    virtual const WeightType* getCol(size_t col) const noexcept
+    {
         return _weights[col];
     }
 
-    virtual void setCol(size_t index, const WeightType *col) {
+    virtual void setCol(size_t index, const WeightType* col)
+    {
         for (size_t i = 0; i < inputSize; ++i)
             _weights[index][i] = col[i];
     }
 
-  private:
+private:
     alignas(alignment) BiasType _biases[outputSize];
     alignas(alignment) WeightType _weights[outputSize][inputSize];
 };

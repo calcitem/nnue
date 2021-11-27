@@ -2,14 +2,14 @@
 #ifndef _NNUE_H
 #define _NNUE_H
 
-#include <cstdint>
-#include <cstddef>
-#include <cstring>
-#include <cassert>
 #include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <memory>
-#include <array>
 #include <vector>
 #ifdef __cpp_lib_bitops
 #include <bit>
@@ -19,11 +19,9 @@
 #include "simd.h"
 #endif
 
-namespace nnue 
-{
+namespace nnue {
 #include "network.h"
 #include "evaluate.h"
 }
-
 
 #endif

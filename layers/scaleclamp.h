@@ -5,22 +5,26 @@
 #include "typed.h"
 
 template <typename InputType, typename OutputType, size_t size,
-          size_t alignment = DEFAULT_ALIGN>
+    size_t alignment = DEFAULT_ALIGN>
 class ScaleAndClamp
     : public TypedLayer<InputType, OutputType, size, size, alignment> {
-  public:
+public:
     ScaleAndClamp(int scaleFactor, int clampMax)
-        : _scaleFactor(scaleFactor), _clampMax(clampMax) {}
+        : _scaleFactor(scaleFactor)
+        , _clampMax(clampMax)
+    {
+    }
 
     virtual ~ScaleAndClamp() = default;
 
-    virtual void doForward(const InputType *input, OutputType *output) const
-        noexcept {
+    virtual void doForward(
+        const InputType* input, OutputType* output) const noexcept
+    {
 #if defined(SIMD)
         // TBD assume fixed scale factor
         assert(_scaleFactor == 64);
-        simd::scale_and_clamp<size, InputType, OutputType>(input, output, 6,
-                                                           _clampMax);
+        simd::scale_and_clamp<size, InputType, OutputType>(
+            input, output, 6, _clampMax);
 #else
         for (size_t i = 0; i < size; i++) {
             *output++ = static_cast<OutputType>(
@@ -29,7 +33,7 @@ class ScaleAndClamp
 #endif
     }
 
-  protected:
+protected:
     int _scaleFactor, _clampMax;
 };
 

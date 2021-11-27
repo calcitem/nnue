@@ -5,15 +5,19 @@
 #include "typed.h"
 
 template <typename InputType, typename OutputType, size_t size,
-          size_t alignment = DEFAULT_ALIGN>
+    size_t alignment = DEFAULT_ALIGN>
 class Clamp : public TypedLayer<InputType, OutputType, size, size, alignment> {
-  public:
-    Clamp(OutputType clampMax) : _clampMax(clampMax) {}
+public:
+    Clamp(OutputType clampMax)
+        : _clampMax(clampMax)
+    {
+    }
 
     virtual ~Clamp() = default;
 
-    virtual void doForward(const InputType *input, OutputType *output) const
-        noexcept {
+    virtual void doForward(
+        const InputType* input, OutputType* output) const noexcept
+    {
 #if defined(SIMD)
         simd::clamp<size, InputType, OutputType>(input, output, _clampMax);
 #else
@@ -24,7 +28,7 @@ class Clamp : public TypedLayer<InputType, OutputType, size, size, alignment> {
 #endif
     }
 
-  protected:
+protected:
     OutputType _clampMax;
 };
 

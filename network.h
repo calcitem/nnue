@@ -14,7 +14,7 @@ class Network {
 
     template <typename ChessInterface> friend class Evaluator;
 
-  public:
+public:
     static constexpr size_t HalfKpRows = 64 * (10 * 64 + 1);
 
     static constexpr size_t HalfKpOutputSize = 256;
@@ -23,7 +23,7 @@ class Network {
     using OutputType = int32_t;
     using InputType = uint8_t; // output of transformer
     using Layer1 = HalfKp<uint16_t, int16_t, int16_t, int16_t, HalfKpRows,
-                          HalfKpOutputSize>;
+        HalfKpOutputSize>;
     using AccumulatorType = Layer1::AccumulatorType;
     using AccumulatorOutputType = int16_t;
     using Layer2 = LinearLayer<uint8_t, int8_t, int32_t, int32_t, 512, 32>;
@@ -34,7 +34,8 @@ class Network {
 
     static constexpr size_t BUFFER_SIZE = 2048;
 
-    Network() {
+    Network()
+    {
         layers.push_back(new Layer1());
         layers.push_back(new Clamper(127));
         layers.push_back(new Layer2());
@@ -44,7 +45,7 @@ class Network {
         layers.push_back(new Layer4());
 #ifndef NDEBUG
         size_t bufferSize = 0;
-        for (const auto &layer : layers) {
+        for (const auto& layer : layers) {
             bufferSize += layer->bufferSize();
         }
         // verify const buffer size is sufficient
@@ -52,14 +53,16 @@ class Network {
 #endif
     }
 
-    virtual ~Network() {
+    virtual ~Network()
+    {
         for (auto layer : layers) {
             delete layer;
         }
     }
 
     // evaluate the net (layers past the first one)
-    OutputType evaluate(const AccumulatorType &accum) const {
+    OutputType evaluate(const AccumulatorType& accum) const
+    {
         alignas(nnue::DEFAULT_ALIGN) std::byte buffer[BUFFER_SIZE];
         bool first = true;
         // propagate data through the remaining layers
@@ -82,18 +85,18 @@ class Network {
                       << std::dec << std::endl;
 #endif
             if (first) {
-                (*it)->forward(static_cast<const void *>(accum.getOutput()),
-                               static_cast<void *>(buffer + outputOffset));
+                (*it)->forward(static_cast<const void*>(accum.getOutput()),
+                    static_cast<void*>(buffer + outputOffset));
                 first = false;
             } else {
-                (*it)->forward(static_cast<const void *>(buffer + inputOffset),
-                               static_cast<void *>(buffer + outputOffset));
+                (*it)->forward(static_cast<const void*>(buffer + inputOffset),
+                    static_cast<void*>(buffer + outputOffset));
             }
 #ifdef NNUE_TRACE
             if (layer % 2 == 0) {
                 for (i = 0; i < (*it)->bufferSize(); i++) {
-                    std::cout << int((reinterpret_cast<uint8_t *>(
-                                     buffer + outputOffset))[0])
+                    std::cout << int(
+                        (reinterpret_cast<uint8_t*>(buffer + outputOffset))[0])
                               << ' ';
                 }
                 std::cout << std::endl;
@@ -103,42 +106,43 @@ class Network {
         }
 #ifdef NNUE_TRACE
         std::cout << "output: "
-                  << reinterpret_cast<OutputType *>(buffer + lastOffset)[0] /
-                         FV_SCALE
+                  << reinterpret_cast<OutputType*>(buffer + lastOffset)[0]
+                / FV_SCALE
                   << std::endl;
 #endif
-        return reinterpret_cast<OutputType *>(buffer + lastOffset)[0] /
-               FV_SCALE;
+        return reinterpret_cast<OutputType*>(buffer + lastOffset)[0] / FV_SCALE;
     }
 
-    friend std::istream &operator>>(std::istream &i, Network &);
+    friend std::istream& operator>>(std::istream& i, Network&);
 
-    static constexpr unsigned map[16][2] = {
-        {0, 0}, {1, 2}, {3, 4}, {5, 6}, {7, 8}, {9, 10}, {11, 12}, {0, 0},
-        {0, 0}, {2, 1}, {4, 3}, {6, 5}, {8, 7}, {10, 9}, {12, 11}, {0, 0}};
+    static constexpr unsigned map[16][2] = { { 0, 0 }, { 1, 2 }, { 3, 4 },
+        { 5, 6 }, { 7, 8 }, { 9, 10 }, { 11, 12 }, { 0, 0 }, { 0, 0 }, { 2, 1 },
+        { 4, 3 }, { 6, 5 }, { 8, 7 }, { 10, 9 }, { 12, 11 }, { 0, 0 } };
 
     // 180 degree rotation for Black
-    template <Color kside> inline static Square rotate(Square s) {
+    template <Color kside> inline static Square rotate(Square s)
+    {
         return kside == Black ? Square(static_cast<int>(s) ^ 63) : s;
     }
 
     template <Color kside>
-    inline static unsigned getIndex(Square kp, Piece p, Square psq) {
+    inline static unsigned getIndex(Square kp, Piece p, Square psq)
+    {
         assert(p != EmptyPiece);
         Square rkp = rotate<kside>(kp);
         unsigned pidx = map[p][kside];
-        unsigned idx = (64 * 10 + 1) * static_cast<unsigned>(rkp) +
-                       64 * (pidx - 1) +
-                       static_cast<unsigned>(rotate<kside>(psq)) + 1;
+        unsigned idx = (64 * 10 + 1) * static_cast<unsigned>(rkp)
+            + 64 * (pidx - 1) + static_cast<unsigned>(rotate<kside>(psq)) + 1;
         assert(idx < HalfKpRows);
         return idx;
     }
 
-  protected:
-    std::vector<BaseLayer *> layers;
+protected:
+    std::vector<BaseLayer*> layers;
 };
 
-inline std::istream &operator>>(std::istream &s, nnue::Network &network) {
+inline std::istream& operator>>(std::istream& s, nnue::Network& network)
+{
     std::uint32_t version, size;
     version = read_little_endian<uint32_t>(s);
     // TBD: validate hash

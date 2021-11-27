@@ -1,13 +1,15 @@
 // Copyright 2021 by Jon Dart. All Rights Reserved.
 #include "chessint.h"
 
-static const std::unordered_map<char, nnue::Piece> pieceMap = {
-    {'p', nnue::BlackPawn}, {'n', nnue::BlackKnight}, {'b', nnue::BlackBishop},
-    {'r', nnue::BlackRook}, {'q', nnue::BlackQueen},  {'k', nnue::BlackKing},
-    {'P', nnue::WhitePawn}, {'N', nnue::WhiteKnight}, {'B', nnue::WhiteBishop},
-    {'R', nnue::WhiteRook}, {'Q', nnue::WhiteQueen},  {'K', nnue::WhiteKing}};
+static const std::unordered_map<char, nnue::Piece> pieceMap
+    = { { 'p', nnue::BlackPawn }, { 'n', nnue::BlackKnight },
+          { 'b', nnue::BlackBishop }, { 'r', nnue::BlackRook },
+          { 'q', nnue::BlackQueen }, { 'k', nnue::BlackKing },
+          { 'P', nnue::WhitePawn }, { 'N', nnue::WhiteKnight },
+          { 'B', nnue::WhiteBishop }, { 'R', nnue::WhiteRook },
+          { 'Q', nnue::WhiteQueen }, { 'K', nnue::WhiteKing } };
 
-Position::Position(const std::string &fen) 
+Position::Position(const std::string& fen)
     : previous(nullptr)
 {
     int parts = 0;
@@ -43,5 +45,3 @@ Position::Position(const std::string &fen)
     else
         stm = nnue::White;
 }
-
-        

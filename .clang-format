@@ -58,7 +58,7 @@ ForEachMacros:
   - Q_FOREACH
   - BOOST_FOREACH
 IncludeCategories:
-  - Regex:           '^"config\.h"'
+  - Regex:           '^"network\.h"'
     Priority:        -1
   # The main header for a source file automatically gets category 0
   - Regex:           '^<.*SoftLink.h>'

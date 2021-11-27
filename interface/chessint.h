@@ -19,53 +19,68 @@ struct DirtyState {
     nnue::Piece piece;
 
     DirtyState()
-        : from(nnue::InvalidSquare), to(nnue::InvalidSquare),
-          piece(nnue::EmptyPiece) {}
+        : from(nnue::InvalidSquare)
+        , to(nnue::InvalidSquare)
+        , piece(nnue::EmptyPiece)
+    {
+    }
 
     DirtyState(nnue::Square f, nnue::Square t, nnue::Piece p)
-        : from(f), to(t), piece(p) {}
+        : from(f)
+        , to(t)
+        , piece(p)
+    {
+    }
 };
 
 struct Position {
     // create a position from a FEN string
-    Position(const std::string &fen);
+    Position(const std::string& fen);
 
     virtual ~Position() = default;
 
-    Position *previous;
+    Position* previous;
     nnue::Color stm;
     nnue::Square kings[2];
     std::unordered_map<nnue::Square, nnue::Piece> locs;
     nnue::Network::AccumulatorType accum;
     std::array<DirtyState, 3> dirty;
-    unsigned dirty_num {0};
+    unsigned dirty_num { 0 };
 };
 
 // Wrapper over the Position class that exposes a standard interface
 class ChessInterface {
 
-  public:
-    ChessInterface(Position *p) : pos(p) {}
+public:
+    ChessInterface(Position* p)
+        : pos(p)
+    {
+    }
 
-    ChessInterface(const ChessInterface &intf) : pos(intf.pos) {}
+    ChessInterface(const ChessInterface& intf)
+        : pos(intf.pos)
+    {
+    }
 
     virtual ~ChessInterface() = default;
 
-    friend bool operator==(const ChessInterface &intf,
-                           const ChessInterface &other);
+    friend bool operator==(
+        const ChessInterface& intf, const ChessInterface& other);
 
-    friend bool operator!=(const ChessInterface &intf,
-                           const ChessInterface &other);
+    friend bool operator!=(
+        const ChessInterface& intf, const ChessInterface& other);
 
     // return the side to move
     nnue::Color sideToMove() const noexcept { return pos->stm; }
 
     // Return the King square for the specified side
-    nnue::Square kingSquare(nnue::Color side) const noexcept {
+    nnue::Square kingSquare(nnue::Color side) const noexcept
+    {
         return pos->kings[side];
     }
 
-    nnue::Network::AccumulatorType &getAccumulator() const noexcept {
+    nnue::Network::AccumulatorType& getAccumulator() const noexcept
+    {
         return pos->accum;
     }
 
@@ -81,24 +96,27 @@ class ChessInterface {
 
     void setDirtyNum(unsigned num) { pos->dirty_num = num; }
 
-    void getDirtyState(size_t index, nnue::Square &from, nnue::Square &to,
-                       nnue::Piece &p) const {
-        const DirtyState &state = pos->dirty[index];
+    void getDirtyState(size_t index, nnue::Square& from, nnue::Square& to,
+        nnue::Piece& p) const
+    {
+        const DirtyState& state = pos->dirty[index];
         from = state.from;
         to = state.to;
         p = state.piece;
     }
 
-    void setDirtyState(int index, nnue::Square &from, nnue::Square &to,
-                       nnue::Piece &p) {
-        DirtyState &state = pos->dirty[index];
+    void setDirtyState(
+        int index, nnue::Square& from, nnue::Square& to, nnue::Piece& p)
+    {
+        DirtyState& state = pos->dirty[index];
         from = state.from;
         to = state.to;
         p = state.piece;
     }
 
     // Change the state of this interace to the previous position
-    bool previous() {
+    bool previous()
+    {
         if (hasPrevious()) {
             pos = pos->previous;
             return true;
@@ -109,19 +127,19 @@ class ChessInterface {
 
     bool hasPrevious() const noexcept { return pos->previous != nullptr; }
 
-    Position *getPrevious() const noexcept { return pos->previous; }
+    Position* getPrevious() const noexcept { return pos->previous; }
 
-  private:
-    Position *pos;
+private:
+    Position* pos;
 };
 
-inline bool operator==(const ChessInterface &intf,
-                       const ChessInterface &other) {
+inline bool operator==(const ChessInterface& intf, const ChessInterface& other)
+{
     return intf.pos == other.pos;
 }
 
-inline bool operator!=(const ChessInterface &intf,
-                       const ChessInterface &other) {
+inline bool operator!=(const ChessInterface& intf, const ChessInterface& other)
+{
     return intf.pos == other.pos;
 }
 
