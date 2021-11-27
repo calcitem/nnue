@@ -31,7 +31,7 @@ static int test_linear() {
     unsigned seed1 =
         std::chrono::system_clock::now().time_since_epoch().count();
     std::mt19937 gen(seed1);
-    std::uniform_int_distribution<WeightType> dist(-127, 127);
+    std::uniform_int_distribution<int> dist(-127, 127);
 
     constexpr size_t bufSize = COLS*sizeof(BiasType)+ (ROWS * COLS)*sizeof(WeightType);
     auto buf = std::unique_ptr<std::byte[]>(new std::byte[bufSize]);

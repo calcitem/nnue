@@ -38,7 +38,7 @@ struct Position {
     std::unordered_map<nnue::Square, nnue::Piece> locs;
     nnue::Network::AccumulatorType accum;
     std::array<DirtyState, 3> dirty;
-    unsigned dirty_num;
+    unsigned dirty_num {0};
 };
 
 // Wrapper over the Position class that exposes a standard interface
